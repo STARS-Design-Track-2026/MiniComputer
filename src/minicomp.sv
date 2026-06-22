@@ -10,9 +10,8 @@ module minicomp (
   input logic rxready,
   output logic [7:0] txdata,
   input logic [7:0] rxdata,
-  output logic [15:0] debug
+  output logic [63:0] debug
 );
 
-  
 
 endmodule

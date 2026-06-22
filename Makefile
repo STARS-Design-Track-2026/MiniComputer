@@ -5,7 +5,7 @@ YOSYS=yosys
 NEXTPNR=nextpnr-ice40
 SHELL=bash
 
-PROJ	    = lab11
+PROJ	    = minicomputer
 PINMAP 	    = pinmap.pcf
 TCLPREF     = addwave.gtkw
 SRCDIR      = src
