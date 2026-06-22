@@ -1,0 +1,18 @@
+{
+  "name": "Minicomputer HDL",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mshr-community.veriloghdl",
+        "ms-vscode.cpptools",
+        "ms-vscode.makefile-tools"
+      ]
+    }
+  },
+  // Verify the toolchain is available after the container starts.
+  "postCreateCommand": "echo '--- Tool versions ---' && verilator --version && yosys --version && iverilog -V 2>&1 | head -1 && echo '---------------------'",
+  "remoteUser": "vscode"
+}
