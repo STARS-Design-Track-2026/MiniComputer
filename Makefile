@@ -33,22 +33,24 @@ FOOTPRINT = ct256
 all: cram
 
 #########################
-# Flash to FPGA
-$(BUILD)/$(PROJ).json : $(ICE) $(SRC) $(SRC_MODULES) $(PINMAP) Makefile
+# Check code and synthesize design into a JSON netlist
+$(BUILD)/$(FPGA_TOP).json : $(ICE) $(SRC)/* $(PINMAP)
 	# lint with Verilator
-	verilator --lint-only -Isrc --top-module top $(SRC) $(SRC_MODULES)
+	verilator --lint-only --top-module top -Werror-latch -y $(SRC) $(SRC)/top.sv
 	# if build folder doesn't exist, create it
 	mkdir -p $(BUILD)
 	# synthesize using Yosys
-	$(YOSYS) -p "read_verilog -sv -Isrc -noblackbox $(FILES); synth_ice40 -top ice40hx8k -json $(BUILD)/$(PROJ).json"
+	$(YOSYS) -p "read_verilog -sv -noblackbox $(ICE) $(UART) $(SRC)/*; synth_ice40 -top ice40hx8k; write_json -noscopeinfo $(BUILD)/$(FPGA_TOP).json"
 
-$(BUILD)/$(PROJ).asc : $(BUILD)/$(PROJ).json
+# Place and route design using nextpnr
+$(BUILD)/$(FPGA_TOP).asc : $(BUILD)/$(FPGA_TOP).json
 	# Place and route using nextpnr
-	$(NEXTPNR) --hx8k --package ct256 --pcf $(PINMAP) --asc $(BUILD)/$(PROJ).asc --json $(BUILD)/$(PROJ).json 2> >(sed -e 's/^.* 0 errors$$//' -e '/^Info:/d' -e '/^[ ]*$$/d' 1>&2)
+	$(NEXTPNR) --hx8k --package ct256 --placer-heap-cell-placement-timeout 0 --pcf $(PINMAP) --asc $(BUILD)/$(FPGA_TOP).asc --json $(BUILD)/$(FPGA_TOP).json 2> >(sed -e 's/^.* 0 errors$$//' -e '/^Info:/d' -e '/^[ ]*$$/d' 1>&2)
 
-$(BUILD)/$(PROJ).bin : $(BUILD)/$(PROJ).asc
+# Convert to bitstream using IcePack
+$(BUILD)/$(FPGA_TOP).bin : $(BUILD)/$(FPGA_TOP).asc
 	# Convert to bitstream using IcePack
-	icepack $(BUILD)/$(PROJ).asc $(BUILD)/$(PROJ).bin
+	icepack $(BUILD)/$(FPGA_TOP).asc $(BUILD)/$(FPGA_TOP).bin
 
 #########################
 # ice40 Specific Targets
