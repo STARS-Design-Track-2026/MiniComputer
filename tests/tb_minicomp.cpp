@@ -1,20 +1,36 @@
 #include "Vminicomp.h"
 #include "verilated.h"
+#include "verilated_fst_c.h"
 
 #include <cstdint>
 #include <iostream>
 #include <queue>
 #include <string>
 
+// 1. Initialize context properly
+const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+// 2. Enable FST tracing using the declared context pointer
+auto* tfp = new VerilatedFstC();
+
 static void tick(Vminicomp& dut) {
   dut.clk = 0; dut.eval();
+  tfp->dump(contextp->time());
+  contextp->timeInc(1);
   dut.clk = 1; dut.eval();
+  tfp->dump(contextp->time());
+  contextp->timeInc(1);
 }
 
 int main(int argc, char** argv) {
-  Verilated::commandArgs(argc, argv);
-  Vminicomp dut;
-  int passed = 0, total = 0;
+    contextp->commandArgs(argc, argv);
+    contextp->traceEverOn(true);
+
+    Vminicomp dut;
+    int passed = 0, total = 0;
+    
+    // Use dot operator (.) instead of arrow (->) because dut is an object
+    dut.trace(tfp, 99);       
+    tfp->open("waves/minicomp.fst");
 
   auto check = [&](bool cond, const char* name) {
     ++total;
@@ -49,6 +65,9 @@ int main(int argc, char** argv) {
       if (c == '\n' && ++newline_count >= 4) break;
     }
   }
+
+  tfp->close(); 
+  delete tfp;
 
   std::cout << "  UART output: '" << tx << "'\n";
   check(tx.size() >= 16,                                              "output has at least 16 characters");

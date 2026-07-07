@@ -5,14 +5,16 @@ YOSYS=yosys
 NEXTPNR=nextpnr-ice40
 SHELL=bash
 
-PROJ	    = minicomputer
-PINMAP 	    = pinmap.pcf
+PROJ	    = minicomp
+PINMAP 	    = support/pinmap.pcf
 TCLPREF     = addwave.gtkw
 SRCDIR      = src
 SRC_MODULES = $(SRCDIR)/pc.sv $(SRCDIR)/regfile.sv $(SRCDIR)/memory.sv \
               $(SRCDIR)/alu.sv $(SRCDIR)/uart_peripheral.sv $(SRCDIR)/minicomp.sv
-SRC         = top.sv
-ICE         = ice40hx8k.sv
+
+FPGA_TOP	= top
+SRC         = src
+ICE         = support/ice40hx8k.sv
 CHK         = check.bin
 DEM         = demo.bin
 JSON        = ll.json
@@ -60,19 +62,19 @@ check: $(CHK)
 demo:  $(DEM)
 	iceprog -S $(DEM)
 
-flash: $(BUILD)/$(PROJ).bin
-	iceprog $(BUILD)/$(PROJ).bin
+flash: $(BUILD)/$(FPGA_TOP).bin
+	iceprog $(BUILD)/$(FPGA_TOP).bin
 
-cram: $(BUILD)/$(PROJ).bin
-	iceprog -S $(BUILD)/$(PROJ).bin
+cram: $(BUILD)/$(FPGA_TOP).bin
+	iceprog -S $(BUILD)/$(FPGA_TOP).bin
 
-time: $(BUILD)/$(PROJ).asc
+time: $(BUILD)/$(FPGA_TOP).asc
 	icetime -p $(PINMAP) -P $(FOOTPRINT) -d $(TIMEDEV) $<
 
 #########################
 # Clean Up
 clean:
-	rm -rf build/ *.fst *.vcd verilog.log abc.history
+	rm -rf build/ mapped/ *.log waves/*.vcd
 
 #########################
 # Verification — one target per submodule
@@ -82,7 +84,7 @@ define verify_module
 @echo "==> $(1)"
 @mkdir -p $(BUILD_VER)/$(1)
 @echo "  Compiling..."
-@verilator $(VERFLAGS) --top-module $(1) --Mdir $(BUILD_VER)/$(1) $(2) --exe $(3) >/dev/null
+@verilator $(VERFLAGS) --top-module $(1) --trace-fst --trace-max-array 65536 --trace-max-width 65536 --Mdir $(BUILD_VER)/$(1) $(2) --exe $(3) >/dev/null
 @echo "  Simulating..."
 @$(BUILD_VER)/$(1)/V$(1)
 endef
