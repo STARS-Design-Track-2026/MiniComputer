@@ -115,6 +115,7 @@ verify_uart_peripheral: $(SRCDIR)/uart_peripheral.sv $(TESTS)/tb_uart_peripheral
 		$(CURDIR)/$(TESTS)/tb_uart_peripheral.cpp)
 
 verify_minicomp: $(SRC_MODULES) $(TESTS)/tb_minicomp.cpp
+    mkdir -p waves
 	$(call verify_module,minicomp,\
 		$(addprefix $(CURDIR)/,$(SRC_MODULES)),\
 		$(CURDIR)/$(TESTS)/tb_minicomp.cpp)
