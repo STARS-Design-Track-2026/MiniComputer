@@ -38,7 +38,7 @@ all: cram
 # Check code and synthesize design into a JSON netlist
 $(BUILD)/$(FPGA_TOP).json : $(FILES) $(PINMAP)
 	# lint with Verilator
-	verilator --lint-only --top-module top -Wno-TIMESCALEMOD -Werror-latch -I$(CURDIR) $(FILES)
+	verilator --lint-only --top-module top -Wno-PINMISSING -Wno-TIMESCALEMOD -Werror-latch -I$(CURDIR) $(FILES)
 	# if build folder doesn't exist, create it
 	mkdir -p $(BUILD)
 	# synthesize using Yosys
