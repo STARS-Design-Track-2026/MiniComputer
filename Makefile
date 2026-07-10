@@ -6,15 +6,15 @@ NEXTPNR=nextpnr-ice40
 SHELL=bash
 
 PROJ	    = minicomp
-PINMAP 	    = support/pinmap.pcf
+PINMAP 	    = pinmap.pcf
 TCLPREF     = addwave.gtkw
 SRCDIR      = src
 SRC_MODULES = $(SRCDIR)/pc.sv $(SRCDIR)/regfile.sv $(SRCDIR)/memory.sv \
               $(SRCDIR)/alu.sv $(SRCDIR)/uart_peripheral.sv $(SRCDIR)/minicomp.sv
 
-FPGA_TOP	= top
-SRC         = src
-ICE         = support/ice40hx8k.sv
+FPGA_TOP	= $(PROJ)
+SRC         = top.sv 
+ICE         = ice40hx8k.sv
 CHK         = check.bin
 DEM         = demo.bin
 JSON        = ll.json
@@ -36,13 +36,13 @@ all: cram
 
 #########################
 # Check code and synthesize design into a JSON netlist
-$(BUILD)/$(FPGA_TOP).json : $(ICE) $(SRC)/* $(PINMAP)
+$(BUILD)/$(FPGA_TOP).json : $(FILES) $(PINMAP)
 	# lint with Verilator
-	verilator --lint-only --top-module top -Werror-latch -y $(SRC) $(SRC)/top.sv
+	verilator --lint-only --top-module top -Wno-TIMESCALEMOD -Werror-latch -I$(CURDIR) $(FILES)
 	# if build folder doesn't exist, create it
 	mkdir -p $(BUILD)
 	# synthesize using Yosys
-	$(YOSYS) -p "read_verilog -sv -noblackbox $(ICE) $(UART) $(SRC)/*; synth_ice40 -top ice40hx8k; write_json -noscopeinfo $(BUILD)/$(FPGA_TOP).json"
+	$(YOSYS) -p "read_verilog -sv -noblackbox $(FILES); synth_ice40 -top ice40hx8k; write_json -noscopeinfo $(BUILD)/$(FPGA_TOP).json"
 
 # Place and route design using nextpnr
 $(BUILD)/$(FPGA_TOP).asc : $(BUILD)/$(FPGA_TOP).json
@@ -54,7 +54,7 @@ $(BUILD)/$(FPGA_TOP).bin : $(BUILD)/$(FPGA_TOP).asc
 	# Convert to bitstream using IcePack
 	icepack $(BUILD)/$(FPGA_TOP).asc $(BUILD)/$(FPGA_TOP).bin
 
-#########################
+
 # ice40 Specific Targets
 check: $(CHK)
 	iceprog -S $(CHK)
@@ -115,7 +115,7 @@ verify_uart_peripheral: $(SRCDIR)/uart_peripheral.sv $(TESTS)/tb_uart_peripheral
 		$(CURDIR)/$(TESTS)/tb_uart_peripheral.cpp)
 
 verify_minicomp: $(SRC_MODULES) $(TESTS)/tb_minicomp.cpp
-    mkdir -p waves
+	@mkdir -p waves
 	$(call verify_module,minicomp,\
 		$(addprefix $(CURDIR)/,$(SRC_MODULES)),\
 		$(CURDIR)/$(TESTS)/tb_minicomp.cpp)
@@ -125,3 +125,4 @@ verify_all: verify_alu verify_pc verify_regfile verify_memory \
 	@echo "All Verilator tests passed."
 
 verify_verilator: verify_all
+
